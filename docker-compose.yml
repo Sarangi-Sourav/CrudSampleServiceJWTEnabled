@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: springboot-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Sololeveling@123
+      MYSQL_DATABASE: classicmodels
+      MYSQL_USER: classic_model_user
+      MYSQL_PASSWORD: Classic@2026
+      MYSQL_INITDB_SKIP_TZINFO: 1
+    ports:
+      - "3307:3306"  # Changed to 3307 to avoid conflicts
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - springboot-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pSololeveling@123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  springboot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: springboot-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/classicmodels
+      SPRING_DATASOURCE_USERNAME: classic_model_user
+      SPRING_DATASOURCE_PASSWORD: Classic@2026
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      # for logging
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: DEBUG
+      LOGGING_LEVEL_COM_ZAXXER_HIKARI: DEBUG
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    networks:
+      - springboot-network
+    restart: on-failure:3
+
+networks:
+  springboot-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
